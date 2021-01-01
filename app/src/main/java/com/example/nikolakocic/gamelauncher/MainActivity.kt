@@ -10,7 +10,6 @@ import androidx.lifecycle.Observer
 
 class MainActivity : AppCompatActivity() {
     companion object {
-        private const val TAG = "GameLauncher"
         private val permissionRequestCodes = ActivityStartCodes.values().map { it.code }.toList()
     }
 
@@ -39,4 +38,3 @@ class MainActivity : AppCompatActivity() {
         model.run(applicationContext)
     }
 }
-

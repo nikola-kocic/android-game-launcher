@@ -1,13 +1,17 @@
 package com.example.nikolakocic.gamelauncher
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import java.util.concurrent.atomic.AtomicInteger
 
 class MyViewModel : ViewModel() {
-    private val actions = listOf<ActionManager>(BrightnessAction())
+    companion object {
+        const val PREF_NAME_ACTIVE = "active"
+    }
+
+    private val actions = listOf(AutoBrightnessAction(), BrightnessAction())
     private val allRequiredPermissions = {
         val requiredPermissions = mutableSetOf<PermissionManager>()
         for (action in actions) {
@@ -16,7 +20,8 @@ class MyViewModel : ViewModel() {
         requiredPermissions
     }()
 
-    private val permissionToRequestIterator: Iterator<PermissionManager> = allRequiredPermissions.iterator()
+    private val permissionToRequestIterator: Iterator<PermissionManager> =
+        allRequiredPermissions.iterator()
     private val permissionToRequest = MutableLiveData<PermissionManager?>()
 
     fun getPermissionToRequest(): LiveData<PermissionManager?> {
@@ -33,6 +38,13 @@ class MyViewModel : ViewModel() {
         return null
     }
 
+    private fun getPreferences(context: Context): SharedPreferences {
+        return context.getSharedPreferences(
+            Consts.SHARED_PREFERENCE_NAME_OLD_VALUES,
+            Context.MODE_PRIVATE
+        )
+    }
+
     fun finishedPermissionRequest(code: Int?, context: Context) {
         if (code != null) {
             val requestedPermission = permissionToRequest.value
@@ -47,10 +59,53 @@ class MyViewModel : ViewModel() {
         }
     }
 
-    private fun performActions(context: Context) {
+    private fun saveCurrentValues(context: Context, pref: SharedPreferences) {
+        val editor = pref.edit()
+        editor.putBoolean(PREF_NAME_ACTIVE, true)
         for (action in actions) {
-            action.performAction(context)
+            val currentValue = action.getCurrentValue(context)
+            val preferenceKey = action.getPreferenceName()
+            when (currentValue) {
+                is PreviousIntValue -> editor.putInt(preferenceKey, currentValue.value)
+                is PreviousBoolValue -> editor.putBoolean(preferenceKey, currentValue.value)
+                null -> {
+                }
+            }
         }
+        editor.apply()
+    }
+
+    private fun performActions(context: Context) {
+        val pref = getPreferences(context)
+        val active = pref.getBoolean(PREF_NAME_ACTIVE, false)
+        if (active) {
+            revertActions(context)
+        } else {
+            saveCurrentValues(context, pref)
+            for (action in actions) {
+                action.performAction(context)
+            }
+        }
+    }
+
+    private fun revertActions(context: Context) {
+        val pref = getPreferences(context)
+        val allPrefs = pref.all
+        for (action in actions) {
+            val previousValue: PreviousValue? =
+                when (val prefValue = allPrefs[action.getPreferenceName()]) {
+                    null -> null
+                    is Int -> PreviousIntValue(prefValue)
+                    is Boolean -> PreviousBoolValue(prefValue)
+                    else -> null
+                }
+            if (previousValue != null) {
+                action.revertAction(context, previousValue)
+            }
+        }
+        val editor = pref.edit()
+        editor.clear()
+        editor.apply()
     }
 
     fun run(context: Context) {

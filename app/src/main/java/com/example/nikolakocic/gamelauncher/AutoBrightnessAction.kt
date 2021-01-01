@@ -3,9 +3,9 @@ package com.example.nikolakocic.gamelauncher
 import android.content.Context
 import android.provider.Settings
 
-class BrightnessAction : ActionManager {
+class AutoBrightnessAction : ActionManager {
     override fun getPreferenceName(): String {
-        return "brightness_val"
+        return "auto_brightness_val"
     }
 
     override fun requiredPermissions(): List<PermissionManager> {
@@ -16,7 +16,7 @@ class BrightnessAction : ActionManager {
         return try {
             PreviousIntValue(
                 Settings.System.getInt(
-                    context.contentResolver, Settings.System.SCREEN_BRIGHTNESS
+                    context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE
                 )
             )
         } catch (e: Settings.SettingNotFoundException) {
@@ -24,20 +24,20 @@ class BrightnessAction : ActionManager {
         }
     }
 
-    private fun setBrightness(context: Context, value: Int): Boolean {
+    private fun setAutoBrightness(context: Context, value: Int): Boolean {
         return Settings.System.putInt(
             context.contentResolver,
-            Settings.System.SCREEN_BRIGHTNESS,
+            Settings.System.SCREEN_BRIGHTNESS_MODE,
             value
         )
     }
 
     override fun performAction(context: Context): Boolean {
-        return setBrightness(context, 10)
+        return setAutoBrightness(context, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
     }
 
     override fun revertAction(context: Context, previousValue: PreviousValue) {
         check(previousValue is PreviousIntValue)
-        setBrightness(context, previousValue.value)
+        setAutoBrightness(context, previousValue.value)
     }
 }

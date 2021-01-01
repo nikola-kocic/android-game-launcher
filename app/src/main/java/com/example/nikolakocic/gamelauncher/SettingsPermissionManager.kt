@@ -15,7 +15,7 @@ class SettingsPermissionManager: PermissionManager {
         return Settings.System.canWrite(context)
     }
 
-    override fun requestPermission(activity: Activity): Unit {
+    override fun requestPermission(activity: Activity) {
         val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
         intent.data = Uri.parse("package:" + activity.packageName)
         activity.startActivityForResult(intent, activityCode())

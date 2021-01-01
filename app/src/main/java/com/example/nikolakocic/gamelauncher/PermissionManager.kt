@@ -6,5 +6,5 @@ import android.content.Context
 interface PermissionManager {
     fun activityCode(): Int
     fun hasPermission(context: Context): Boolean
-    fun requestPermission(activity: Activity): Unit
+    fun requestPermission(activity: Activity)
 }
